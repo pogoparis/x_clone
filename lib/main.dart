@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:x_clone/connection_page.dart';
+import 'package:x_clone/pages/connection_page.dart';
+import 'package:x_clone/pages/newtweet_page.dart';
 
-import 'twitter_page.dart';
+import 'pages/twitter_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -11,15 +12,25 @@ void main() {
 class MyApp extends StatelessWidget {
   MyApp({super.key});
   final goRouter = GoRouter(
-    initialLocation: "/connection",
-    routes: [
-      GoRoute(path: '/connection', builder: (context,state)=> ConnexionPage(),),
-      GoRoute(path: '/tweets', builder: (context,state)=> TweeterPage(),
-      ),
-    ],
+      initialLocation: "/",
+      routes: [
+        GoRoute(
+            path: "/tweets", builder: (context,state)=> const TwitterPage(),
+            routes: [
+              GoRoute(path: 'new', builder: (context,state)=> const NewTweetPage(),
+              )
+            ]
+        ),
+        GoRoute(path: "/",builder: (context,state)=> const ConnexionPage()),
+      ]
   );
 
-
+/*  final goRouter = GoRouter(
+      initialLocation: "/", routes: [
+    GoRoute(path: "/", builder: (context, state) => ConnexionPage()),
+    GoRoute(path: "/tweets", builder: (context, state) => TwitterPage()),
+    GoRoute(path: "/new", builder: (context, state) => NewTweetPage()),
+  ]);*/
 
   @override
   Widget build(BuildContext context) {

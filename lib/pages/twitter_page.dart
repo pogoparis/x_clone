@@ -1,12 +1,22 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:http/http.dart';
+import 'package:x_clone/bo/tweet.dart';
+import 'package:x_clone/pages/newtweet_page.dart';
 
 void main() {
   runApp(const TweeterPage());
 }
 
-class TweeterPage extends StatelessWidget {
+class TweeterPage extends StatefulWidget {
   const TweeterPage({super.key});
 
+  @override
+  State<TweeterPage> createState() => _TweeterPageState();
+}
+
+class _TweeterPageState extends State<TweeterPage> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -18,6 +28,7 @@ class TweeterPage extends StatelessWidget {
         home: const TwitterPage());
   }
 }
+
 
 class TwitterPage extends StatelessWidget {
   const TwitterPage({super.key});
@@ -37,12 +48,28 @@ class TwitterPage extends StatelessWidget {
           // Barre de navigation supérieur
           const TopNavigationTwitter(),
           // Formulaire de Connexion
-
           // Le reste de la page avec la liste des tweet
-          Expanded(
-              child: ListView.builder(
-                  itemCount: 10,
-                  itemBuilder: (context, index) => const TweetWithButtons())),
+
+            FutureBuilder<Response>(
+                future: get(Uri.parse("https://raw.githubusercontent.com/Chocolaterie/EniWebService/main/api/tweets.json")),
+                builder: (context, snapshot) {
+                  switch(snapshot.connectionState){
+                    case ConnectionState.done:
+                      if(snapshot.hasData && snapshot.data != null){
+                        final listTweetJSON = jsonDecode(snapshot.data!.body) as List<dynamic>;
+                        final List<Tweetos> listTweets = listTweetJSON.map((tweetJSON) => Tweetos.fromMap(tweetJSON)).toList();
+                        return Expanded(
+                            child: ListView.builder(
+                                itemCount: listTweets.length,
+                                itemBuilder: (context,index) => TweetWithButtons(tweetos: listTweets[index],))
+                        );
+                      }else{
+                        return const Icon(Icons.error);
+                      }
+                    default : return  const CircularProgressIndicator();
+                  }
+                }
+            ),
         ],
       ),
       // Barre de navigation basse
@@ -53,7 +80,9 @@ class TwitterPage extends StatelessWidget {
 
 
 class TweetWithButtons extends StatelessWidget {
+  final Tweetos tweetos;
   const TweetWithButtons({
+    required this.tweetos,
     super.key,
   });
 
@@ -63,7 +92,7 @@ class TweetWithButtons extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: Column(
         children: [
-          Tweet(DateTime(2023, 12, 3, 12, 50, 12)),
+          Tweet(tweetos, DateTime(2023,12,3,12,40,12)),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8.0),
             child: ButtonTweetBar(),
@@ -74,22 +103,20 @@ class TweetWithButtons extends StatelessWidget {
   }
 }
 
-class Tweet extends StatelessWidget {
-  final DateTime dateTime;
 
-  Tweet(
-      this.dateTime, {
+class Tweet extends StatelessWidget {
+  final Tweetos tweetos;
+  final DateTime dateTime;
+  const Tweet(
+      this.tweetos,
+      this.dateTime,{
         super.key,
       });
 
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      Image.network(
-        "https://picsum.photos/150",
-        width: 125,
-        height: 125,
-      ),
+      Image.network("https://picsum.photos/150",width: 125,height: 125,),
       Expanded(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -98,20 +125,14 @@ class Tweet extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("LaCrevette@Chocolate",
+                  Text(tweetos.author,
                       style: Theme.of(context).textTheme.titleSmall),
-                  Text(
-                    "${dateTime.minute}m",
-                    style: const TextStyle(color: Colors.grey),
-                  ),
+                  Text("${dateTime.minute}m",
+                    style: const TextStyle(color: Colors.grey),),
                 ],
               ),
-              const SizedBox(
-                height: 8,
-              ),
-              const Text(
-                  "latine euismod nulla mauris corrumpit scripserit unum causae justo"
-                      " pellentesque scripta justo ius elitr orci")
+              const SizedBox(height: 8,),
+              Text(tweetos.message)
             ],
           ),
         ),
@@ -196,8 +217,14 @@ class TopNavigationTwitter extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             IconButton(
-              icon: const Icon(Icons.edit, color: Colors.white),
-              onPressed: () {},
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: () {
+                //TODO APPELLE API
+              },
+            ),
+            IconButton(
+              onPressed: () {context.go("/tweets/new");},
+              icon:Hero(tag:"edit", child:const Icon(Icons.edit, color: Colors.white)),
             ),
             TextButton(
                 onPressed: () {},
